@@ -7,12 +7,7 @@ Nearly 10-fold validation. 10 runs are made and their results are averaged.
 '''
 
 import numpy as np
-import ConfigParser 
-import random
-import string
-import glob
-import os
-import ntpath
+import ConfigParser, random, string, glob, os, ntpath,sys
 
 from keras import backend as K
 from keras.preprocessing.image import ImageDataGenerator
@@ -40,7 +35,6 @@ from sklearn.utils   import shuffle
 
 # plot
 import matplotlib.pyplot as plt
-import sys
 
 sys.path.insert(0, './lib/')
 from help_functions import *
@@ -48,50 +42,6 @@ from pre_processing_v2 import *
 
 
 np.random.seed(15928)
-
-best_or_last = 'last'
-
-#---
-# input images
-#---
-img_width, img_height = 250/2, 200/2 # 
-img_channels = 3   
-nb_classes = 2    # classes: Grade3, Grade4 
-
-# ---
-# training conditions
-# ---
-# a ratio of test data to the total no. of data 
-ratio_test_data = 0.15
-ratio_validation_data = 0.25
-
-num_runs = 20
-nb_epoch = 8000
-
-data_augmentation = False
-batch_size = 32
-
-name_experiment = 'facial'
-path_experiment = './' + name_experiment+ '/' 
-
-INPUT_FILE_PATTERN = '*.bmp'        # original one
-#INPUT_FILE_PATTERN = '*.png'        # Frangi filered 
-
-
-#------------Path of the images --------------------------------------------------------------
-
-dataset_path = './input/'
-
-# positive and negative data samples
-
-IMG_FOLDER = './datasets_for_train_test/'
-
-img_train_file = name_experiment + '_dataset_imgs_train.hdf5'
-label_train_file =  name_experiment + '_dataset_groundTruth_train.hdf5'
-
-img_test_file = name_experiment + '_dataset_imgs_test.hdf5'
-label_test_file =  name_experiment + '_dataset_groundTruth_test.hdf5'
-
 #---------------------------------------------------------------------------------------------
 def write_hdf5(arr,outfile):
     with h5py.File(outfile,"w") as f:
@@ -178,14 +128,8 @@ def get_datasets_train_test(Nimgs, imgs_dir, ratio_for_test):
 
 #--------------- run ------------------------------------------------------------------------- 
 
-#-------
-# reading data 
-#-------
-nb_images = len(glob.glob(os.path.join(IMG_FOLDER, '*', INPUT_FILE_PATTERN)))
-print('No. of image data: {}'.format(nb_images))
 
-for run in range(num_runs):
-
+def test(run):
     print '\n---------------------' + str(run) + '-th run ------------------------------------------\n'
 
     #-------
@@ -214,9 +158,12 @@ for run in range(num_runs):
     X_test = X_test.astype('float32')
     Y_test = np_utils.to_categorical(y_test, nb_classes) # convert class vectors to binary class matrices
 
-    # load the best model trained 
-    model = model_from_json(open(path_experiment + name_experiment + '_' +str(nb_classes) + '_cnn_architecture.json').read())
-    model.load_weights(path_experiment + name_experiment + '_' + str(nb_classes) + '_cnn_' + best_or_last + '_weight_' + str(run) + '.h5')
+    # load the best model trained
+    modelNm =  path_experiment + name_experiment + '_' +str(nb_classes) + '_cnn_architecture.json'
+    model = model_from_json(open(modelNm).read())
+
+    weightNm = path_experiment + name_experiment + '_' + str(nb_classes) + '_cnn_' + best_or_last + '_weight_' + str(run) + '.h5'
+    model.load_weights(weightNm)
 
 
     y_pred = model.predict(X_test, batch_size=32, verbose=2)
@@ -264,3 +211,62 @@ for run in range(num_runs):
 
     plt.close("all")
     '''
+def main():
+    global best_or_last, img_width, img_height, img_channels, nb_classes, ratio_test_data, ratio_validation_data
+    global nb_epoch, data_augmentation, batch_size, name_experiment, path_experiment, INPUT_FILE_PATTERN, dataset_path
+    global img_train_file, label_train_file, img_test_file, label_test_file, nb_images 
+ 
+    best_or_last = 'last'
+    #---
+    # input images
+    #---
+    img_width, img_height = 250/2, 200/2 # 
+    img_channels = 3   
+    nb_classes = 2    # classes: Grade3, Grade4 
+    # ---
+    # training conditions
+    # ---
+    # a ratio of test data to the total no. of data 
+    ratio_test_data = 0.15
+    ratio_validation_data = 0.25
+
+    num_runs = 20
+    nb_epoch = 8000
+
+    data_augmentation = False
+    batch_size = 32
+
+    name_experiment = 'facial'
+    path_experiment = './' + name_experiment+ '/' 
+
+    INPUT_FILE_PATTERN = '*.bmp'        # original one
+    #INPUT_FILE_PATTERN = '*.png'        # Frangi filered 
+
+
+    #------------Path of the images --------------------------------------------------------------
+
+    dataset_path = './input/'
+
+    # positive and negative data samples
+
+    IMG_FOLDER = './datasets_for_train_test/'
+
+    img_train_file = name_experiment + '_dataset_imgs_train.hdf5'
+    label_train_file =  name_experiment + '_dataset_groundTruth_train.hdf5'
+
+    img_test_file = name_experiment + '_dataset_imgs_test.hdf5'
+    label_test_file =  name_experiment + '_dataset_groundTruth_test.hdf5'
+
+    #-------
+    # reading data 
+    #-------
+    nb_images = len(glob.glob(os.path.join(IMG_FOLDER, '*', INPUT_FILE_PATTERN)))
+    print('No. of image data: {}'.format(nb_images))
+     
+    for run in range(num_runs):
+        test(run)
+
+  
+if __name__ == "__main__":
+    main()
+
